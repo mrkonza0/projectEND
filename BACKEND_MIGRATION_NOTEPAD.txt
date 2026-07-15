@@ -18,9 +18,9 @@ backend-src/database/migrations/2026_07_15_000005_add_owner_user_id_to_researche
 
 เหตุผล:
 - เพื่อให้ระบบรู้ว่า "นักวิจัย" record ไหนถูกเพิ่มโดย user คนไหน
-- user ทั่วไปจะลบได้เฉพาะข้อมูลที่ owner_user_id เป็นของตัวเอง
-- admin ลบได้ทุกข้อมูล
-- ถ้า owner_user_id เป็น NULL user ทั่วไปจะลบไม่ได้
+- user ทั่วไปจะแก้ไข/ลบได้เฉพาะข้อมูลที่ owner_user_id เป็นของตัวเอง
+- admin แก้ไข/ลบได้ทุกข้อมูล
+- ถ้า owner_user_id เป็น NULL user ทั่วไปจะแก้ไข/ลบไม่ได้
 
 คำสั่งที่ต้องรันหลัง deploy โค้ดล่าสุด:
 
@@ -190,9 +190,9 @@ owner_user_id = auth()->id()
 เพราะชื่อซ้ำ/เปลี่ยนชื่อ/พิมพ์ชื่อแทนกันได้
 
 กติกาการลบ:
-- admin ลบข้อมูลได้ทุก record
-- user ทั่วไปลบได้เฉพาะ record ที่ owner_user_id ตรงกับ user id ของตัวเอง
-- ถ้า owner_user_id เป็น NULL user ทั่วไปจะลบไม่ได้ ต้องให้ admin ลบหรือ backfill owner_user_id ก่อน
+- admin แก้ไข/ลบข้อมูลได้ทุก record
+- user ทั่วไปแก้ไข/ลบได้เฉพาะ record ที่ owner_user_id ตรงกับ user id ของตัวเอง
+- ถ้า owner_user_id เป็น NULL user ทั่วไปจะแก้ไข/ลบไม่ได้ ต้องให้ admin จัดการหรือ backfill owner_user_id ก่อน
 
 
 4) API ที่ frontend ใช้

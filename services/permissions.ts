@@ -2,8 +2,15 @@ import type { UserProfile } from '@/context/UserContext';
 
 /** true if user owns the record (or is admin) */
 export function canManage(user: UserProfile, record: any): boolean {
+  return canEdit(user, record);
+}
+
+/** true if user can edit the record.
+ *  Edit permission is strict: only the account stored in owner fields or admin.
+ */
+export function canEdit(user: UserProfile, record: any): boolean {
   if (user.role === 'admin') return true;
-  return isOwner(user, record);
+  return isCreatorOwner(user, record);
 }
 
 /** true if user can delete the record.

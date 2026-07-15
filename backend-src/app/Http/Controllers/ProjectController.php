@@ -57,7 +57,7 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
-        abort_unless($this->canManage($request->user(), $project), 403, 'You can edit only your own records.');
+        abort_unless($this->canEdit($request->user(), $project), 403, 'Only the record owner or admin can edit this record.');
 
         $data = $request->only(['title', 'researcher', 'budget', 'year', 'status']);
 
@@ -83,7 +83,13 @@ class ProjectController extends Controller
 
     private function canManage($user, Project $project): bool
     {
-        return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $project);
+        return $this->canEdit($user, $project);
+    }
+
+    private function canEdit($user, Project $project): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($project->owner_user_id && (string) $project->owner_user_id === (string) $user->id);
     }
 
     private function canDelete($user, Project $project): bool

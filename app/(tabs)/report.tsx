@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser, type UserProfile } from '@/context/UserContext';
-import { canDelete, isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
+import { canDelete, canEdit, mergeOwnedRecords } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import { useEffect, useState } from 'react';
@@ -10,7 +10,7 @@ import { ActivityIndicator, Alert, Modal, RefreshControl, ScrollView, StyleSheet
 // report ไม่มี researcher field — ใช้ชื่อโครงการ match กับ project ที่ user เป็นเจ้าของ
 // fallback: user เห็นแค่ record ที่เคยสร้างเอง (ถ้า backend ไม่ส่ง owner มา ให้ admin จัดการ)
 function canOwnReport(user: UserProfile, record: any): boolean {
-  return isAdmin(user) || isOwner(user, record);
+  return canEdit(user, record);
 }
 const STATUSES = ['ร่างรายงาน', 'ส่งแล้ว', 'ผ่านการตรวจ', 'แก้ไข'];
 const empty = { project: '', title: '', abstract: '', date: '', status: 'ร่างรายงาน' };

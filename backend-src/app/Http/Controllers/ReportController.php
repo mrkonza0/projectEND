@@ -62,7 +62,7 @@ class ReportController extends Controller
 
     public function update(Request $request, Report $report)
     {
-        abort_unless($this->canManage($request->user(), $report), 403, 'You can edit only your own records.');
+        abort_unless($this->canEdit($request->user(), $report), 403, 'Only the record owner or admin can edit this record.');
 
         $data = $request->only([
             'project', 'title', 'abstract', 'date', 'status', 'researcher',
@@ -90,7 +90,13 @@ class ReportController extends Controller
 
     private function canManage($user, Report $report): bool
     {
-        return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $report);
+        return $this->canEdit($user, $report);
+    }
+
+    private function canEdit($user, Report $report): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($report->owner_user_id && (string) $report->owner_user_id === (string) $user->id);
     }
 
     private function canDelete($user, Report $report): bool

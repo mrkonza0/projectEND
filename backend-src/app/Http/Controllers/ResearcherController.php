@@ -54,7 +54,7 @@ class ResearcherController extends Controller
 
     public function update(Request $request, Researcher $researcher)
     {
-        abort_unless($this->canManage($request->user(), $researcher), 403, 'You can edit only your own records.');
+        abort_unless($this->canEdit($request->user(), $researcher), 403, 'Only the record owner or admin can edit this record.');
 
         $data = $request->only([
             'name', 'prefix', 'first_name', 'last_name',
@@ -84,7 +84,13 @@ class ResearcherController extends Controller
 
     private function canManage($user, Researcher $researcher): bool
     {
-        return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $researcher);
+        return $this->canEdit($user, $researcher);
+    }
+
+    private function canEdit($user, Researcher $researcher): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($researcher->owner_user_id && (string) $researcher->owner_user_id === (string) $user->id);
     }
 
     private function canDelete($user, Researcher $researcher): bool

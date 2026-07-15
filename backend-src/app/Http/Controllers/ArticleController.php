@@ -53,7 +53,7 @@ class ArticleController extends Controller
 
     public function update(Request $request, Article $article)
     {
-        abort_unless($this->canManage($request->user(), $article), 403, 'You can edit only your own records.');
+        abort_unless($this->canEdit($request->user(), $article), 403, 'Only the record owner or admin can edit this record.');
 
         $data = $request->only(['title', 'author', 'journal', 'year', 'status', 'cited']);
 
@@ -79,7 +79,13 @@ class ArticleController extends Controller
 
     private function canManage($user, Article $article): bool
     {
-        return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $article);
+        return $this->canEdit($user, $article);
+    }
+
+    private function canEdit($user, Article $article): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($article->owner_user_id && (string) $article->owner_user_id === (string) $user->id);
     }
 
     private function canDelete($user, Article $article): bool

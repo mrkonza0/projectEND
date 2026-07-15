@@ -71,7 +71,7 @@ class ProposalController extends Controller
 
     public function update(Request $request, Proposal $proposal)
     {
-        abort_unless($this->canManage($request->user(), $proposal), 403, 'You can edit only your own records.');
+        abort_unless($this->canEdit($request->user(), $proposal), 403, 'Only the record owner or admin can edit this record.');
 
         $data = $request->only([
             'title', 'researcher', 'type', 'budget',
@@ -101,7 +101,13 @@ class ProposalController extends Controller
 
     private function canManage($user, Proposal $proposal): bool
     {
-        return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $proposal);
+        return $this->canEdit($user, $proposal);
+    }
+
+    private function canEdit($user, Proposal $proposal): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($proposal->owner_user_id && (string) $proposal->owner_user_id === (string) $user->id);
     }
 
     private function canDelete($user, Proposal $proposal): bool
