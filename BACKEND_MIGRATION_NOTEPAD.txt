@@ -1,0 +1,306 @@
+URU Research / URU Smart Backend Migration Note
+================================================
+
+ไฟล์นี้ใช้ส่งให้ฝั่ง Backend/Server เพื่อ migrate ฐานข้อมูลให้ frontend ใช้งานได้ครบ
+
+
+1) คำสั่งที่ต้องรันบน Server จริง
+-----------------------------------
+
+หลัง deploy โค้ด backend ล่าสุดแล้ว ให้รัน:
+
+php artisan migrate --force
+php artisan db:seed --force
+php artisan storage:link
+php artisan optimize:clear
+
+
+2) ตาราง/คอลัมน์สำคัญที่ต้องมี
+-------------------------------
+
+users
+- id
+- name
+- email
+- password
+- faculty
+- major
+- position
+- phone
+- photo_url
+- role = admin | user
+- timestamps
+
+
+projects หรือ researches
+- id
+- owner_user_id
+- title
+- researcher
+- budget
+- year
+- status
+- timestamps
+
+
+articles หรือ journals
+- id
+- owner_user_id
+- title
+- author
+- journal
+- year
+- status
+- cited
+- timestamps
+
+
+proposals
+- id
+- owner_user_id
+- title
+- researcher
+- type
+- budget
+- year
+- status
+- contract_no
+- contract_date
+- timestamps
+
+status ที่ frontend รองรับ:
+- รอพิจารณา
+- อนุมัติ
+- ปฏิเสธ
+
+status ที่ API จริงอาจใช้:
+- draft
+- submitted
+- approved
+- rejected
+
+
+reports
+- id
+- owner_user_id
+- project
+- title
+- abstract
+- date
+- status
+- researcher
+- timestamps
+
+status ที่ frontend รองรับ:
+- ร่างรายงาน
+- ส่งแล้ว
+- ผ่านการตรวจ
+- แก้ไข
+
+status ที่ API จริงอาจใช้:
+- draft
+- submitted
+- approved
+- revision_requested
+
+
+files
+- id
+- owner_user_id
+- entity_type
+- entity_id
+- name
+- original_name
+- mime_type
+- file_size
+- disk
+- path
+- timestamps
+
+entity_type:
+- proposal
+- report
+- journal
+
+
+researchers
+- id
+- name
+- prefix
+- first_name
+- last_name
+- work_type
+- faculty
+- program
+- position
+- address
+- birthday
+- phone
+- email
+- line_id
+- national_id
+- expertise
+- education
+- expertise_detail
+- timestamps
+
+
+3) หลักการ owner / permission
+------------------------------
+
+ทุก record ที่ user สร้าง ต้องบันทึก:
+
+owner_user_id = auth()->id()
+
+ห้ามใช้ชื่อ researcher/author เป็นตัวตัดสิน owner อย่างเดียว
+เพราะชื่อซ้ำ/เปลี่ยนชื่อ/พิมพ์ชื่อแทนกันได้
+
+
+4) API ที่ frontend ใช้
+-----------------------
+
+Auth/Profile
+- POST /auth/login
+- POST /auth/logout
+- GET /me
+- PUT /me
+- POST /me/photo
+- DELETE /me/photo
+- PUT /password
+
+Projects/Researches
+- GET /researches?scope=all&per_page=100
+- GET /researches?scope=mine&per_page=100
+- POST /researches
+- PUT /researches/{id}
+- DELETE /researches/{id}
+
+Articles/Journals
+- GET /journals?scope=all&per_page=100
+- GET /journals?scope=mine&per_page=100
+- POST /journals
+- PUT /journals/{id}
+- DELETE /journals/{id}
+
+Proposals
+- GET /proposals?scope=all&per_page=100
+- GET /proposals?scope=mine&per_page=100
+- POST /proposals
+- PUT /proposals/{id}
+- DELETE /proposals/{id}
+
+Reports
+- GET /reports?scope=all&per_page=100
+- GET /reports?scope=mine&per_page=100
+- POST /reports
+- PUT /reports/{id}
+- DELETE /reports/{id}
+
+Files
+- GET /files?per_page=100
+- GET /files?entity_type=proposal&entity_id=1
+- POST /files
+- GET /files/{id}/download
+- DELETE /files/{id}
+
+Admin Users
+- GET /admin/users?per_page=100
+- PATCH /admin/users/{id}/role
+- DELETE /admin/users/{id}
+
+Notifications
+- GET /notifications
+- GET /notifications/unread-count
+- PATCH /notifications/{id}/read
+- POST /notifications/read-all
+- DELETE /notifications/{id}
+
+Reference / Dropdown
+- GET /ref/research-types
+- GET /ref/journal-types
+- GET /main-units
+- GET /sub-units
+- GET /ref/profile-options
+
+
+5) สำคัญสำหรับ IIS Server
+--------------------------
+
+ถ้า IIS ไม่รับ PUT / PATCH / DELETE ตรง ๆ
+ให้ backend รองรับ method override:
+
+POST /proposals/1
+X-HTTP-Method-Override: DELETE
+
+Body:
+{
+  "_method": "DELETE"
+}
+
+Frontend ใส่ method override ให้แล้ว
+แต่ backend ต้องอ่าน header/body นี้ด้วย
+
+
+6) การตรวจหลัง migrate
+------------------------
+
+เช็กจำนวนข้อมูล:
+
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM proposals;
+SELECT COUNT(*) FROM reports;
+SELECT COUNT(*) FROM files;
+
+เช็ก owner:
+
+SELECT id, title, owner_user_id FROM proposals;
+SELECT id, title, owner_user_id FROM reports;
+
+ถ้า owner_user_id เป็น NULL ระบบจะไม่รู้ว่าใครเป็นเจ้าของ
+จะทำให้ "ของฉัน" ไม่ขึ้น หรือแก้/ลบไม่ได้
+
+
+7) ข้อมูลตัวอย่างหลัง db:seed
+-------------------------------
+
+บัญชี:
+
+admin@admin.com / password
+somchai@uru.ac.th / password
+naree@uru.ac.th / password
+
+Seeder จะใส่ตัวอย่าง:
+- users
+- researchers
+- projects
+- articles
+- proposals
+- reports
+
+และผูก owner_user_id ให้แล้ว
+
+
+8) ถ้าข้อมูลเก่ามีอยู่แล้ว
+---------------------------
+
+ต้อง backfill owner_user_id:
+
+projects.owner_user_id จาก projects.researcher = users.name
+articles.owner_user_id จาก articles.author = users.name
+proposals.owner_user_id จาก proposals.researcher = users.name
+reports.owner_user_id จาก reports.researcher = users.name
+
+ถ้าชื่อไม่ตรง ต้อง map เองด้วย user id ที่ถูกต้อง
+
+
+9) อาการถ้ายังไม่ได้ migrate/seed
+-----------------------------------
+
+- หน้า list ไม่มีข้อมูล
+- เพิ่มแล้วไม่เห็นรายการ
+- กดลบไม่ได้
+- หน้า "ของฉัน" ว่าง
+- budget แสดงผิด
+- upload รูป/ไฟล์ไม่ได้
+- API error ว่า column/table ไม่มี
+
