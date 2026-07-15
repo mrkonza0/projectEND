@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Article;
 use App\Models\Project;
+use App\Models\Proposal;
+use App\Models\Report;
 use App\Models\Researcher;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -13,43 +15,116 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Default admin account
-        User::create([
-            'name'     => 'ภาศพงศ์ องค์ธนาวัฒน์',
-            'email'    => 'admin@admin.com',
-            'password' => Hash::make('password'),
-            'faculty'  => 'วิทยาศาสตร์และเทคโนโลยี',
-            'major'    => 'วิทยาการคอมพิวเตอร์',
-            'position' => 'อาจารย์ประจำ',
-            'phone'    => '055-123-456',
-            'role'     => 'admin',
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@admin.com'],
+            [
+                'name'     => 'ภาศพงศ์ องค์ธนาวัฒน์',
+                'password' => Hash::make('password'),
+                'faculty'  => 'วิทยาศาสตร์และเทคโนโลยี',
+                'major'    => 'วิทยาการคอมพิวเตอร์',
+                'position' => 'อาจารย์ประจำ',
+                'phone'    => '055-123-456',
+                'role'     => 'admin',
+            ],
+        );
 
-        // Researchers
+        $somchai = User::updateOrCreate(
+            ['email' => 'somchai@uru.ac.th'],
+            [
+                'name'     => 'สมชาย ใจดี',
+                'password' => Hash::make('password'),
+                'faculty'  => 'ครุศาสตร์',
+                'major'    => 'การศึกษาปฐมวัย',
+                'position' => 'อาจารย์',
+                'phone'    => '055-234-567',
+                'role'     => 'user',
+            ],
+        );
+
+        $naree = User::updateOrCreate(
+            ['email' => 'naree@uru.ac.th'],
+            [
+                'name'     => 'นารี สุขสงบ',
+                'password' => Hash::make('password'),
+                'faculty'  => 'มนุษยศาสตร์และสังคมศาสตร์',
+                'major'    => 'ภาษาไทย',
+                'position' => 'อาจารย์',
+                'phone'    => '055-345-678',
+                'role'     => 'user',
+            ],
+        );
+
+        $usersByName = [
+            $admin->name => $admin,
+            $somchai->name => $somchai,
+            $naree->name => $naree,
+        ];
+
         foreach ([
-            ['name' => 'ภาศพงศ์ องค์ธนาวัฒน์', 'faculty' => 'วิทยาศาสตร์และเทคโนโลยี',       'expertise' => 'วิทยาการคอมพิวเตอร์', 'email' => 'admin@uru.ac.th',    'phone' => '055-123-456'],
-            ['name' => 'สมชาย ใจดี',            'faculty' => 'ครุศาสตร์',                      'expertise' => 'การศึกษาปฐมวัย',     'email' => 'somchai@uru.ac.th', 'phone' => '055-234-567'],
-            ['name' => 'นารี สุขสงบ',            'faculty' => 'มนุษยศาสตร์และสังคมศาสตร์',     'expertise' => 'ภาษาถิ่น',           'email' => 'naree@uru.ac.th',   'phone' => '055-345-678'],
-        ] as $r) {
-            Researcher::create($r);
+            ['name' => $admin->name, 'faculty' => $admin->faculty, 'expertise' => 'วิทยาการคอมพิวเตอร์', 'email' => 'admin@uru.ac.th', 'phone' => $admin->phone],
+            ['name' => $somchai->name, 'faculty' => $somchai->faculty, 'expertise' => 'การศึกษาปฐมวัย', 'email' => $somchai->email, 'phone' => $somchai->phone],
+            ['name' => $naree->name, 'faculty' => $naree->faculty, 'expertise' => 'ภาษาถิ่น', 'email' => $naree->email, 'phone' => $naree->phone],
+        ] as $researcher) {
+            Researcher::updateOrCreate(
+                ['email' => $researcher['email']],
+                $researcher,
+            );
         }
 
-        // Projects
         foreach ([
-            ['title' => 'AI เพื่อการเกษตรอัจฉริยะ',                   'researcher' => 'ภาศพงศ์ องค์ธนาวัฒน์', 'budget' => '250000', 'year' => '2566', 'status' => 'กำลังดำเนินการ'],
-            ['title' => 'การพัฒนาและอนุรักษ์ภาษาถิ่นเหนือ',           'researcher' => 'นารี สุขสงบ',           'budget' => '150000', 'year' => '2566', 'status' => 'เสร็จสิ้น'],
-            ['title' => 'นวัตกรรมการเรียนรู้ปฐมวัยผ่านเทคโนโลยี',    'researcher' => 'สมชาย ใจดี',           'budget' => '180000', 'year' => '2567', 'status' => 'อนุมัติแล้ว'],
-        ] as $p) {
-            Project::create($p);
+            ['title' => 'AI เพื่อการเกษตรอัจฉริยะ', 'researcher' => $admin->name, 'budget' => '250000', 'year' => '2566', 'status' => 'กำลังดำเนินการ'],
+            ['title' => 'การพัฒนาและอนุรักษ์ภาษาถิ่นเหนือ', 'researcher' => $naree->name, 'budget' => '150000', 'year' => '2566', 'status' => 'เสร็จสิ้น'],
+            ['title' => 'นวัตกรรมการเรียนรู้ปฐมวัยผ่านเทคโนโลยี', 'researcher' => $somchai->name, 'budget' => '180000', 'year' => '2567', 'status' => 'อนุมัติแล้ว'],
+        ] as $project) {
+            Project::updateOrCreate(
+                ['title' => $project['title']],
+                [
+                    ...$project,
+                    'owner_user_id' => $usersByName[$project['researcher']]->id ?? $admin->id,
+                ],
+            );
         }
 
-        // Articles
         foreach ([
-            ['title' => 'Machine Learning Applications in Thai Agriculture', 'author' => 'ภาศพงศ์ องค์ธนาวัฒน์', 'journal' => 'Thai Journal of Science and Technology', 'year' => '2566', 'status' => 'ตีพิมพ์แล้ว', 'cited' => 12],
-            ['title' => 'การอนุรักษ์ภาษาถิ่นด้วยเทคโนโลยีดิจิทัล',   'author' => 'นารี สุขสงบ',           'journal' => 'วารสารมนุษยศาสตร์ มรอ.',              'year' => '2565', 'status' => 'ตีพิมพ์แล้ว', 'cited' => 5],
-            ['title' => 'Active Learning in Early Childhood Education',     'author' => 'สมชาย ใจดี',           'journal' => 'Journal of Education Research',        'year' => '2566', 'status' => 'รอตีพิมพ์',   'cited' => 0],
-        ] as $a) {
-            Article::create($a);
+            ['title' => 'Machine Learning Applications in Thai Agriculture', 'author' => $admin->name, 'journal' => 'Thai Journal of Science and Technology', 'year' => '2566', 'status' => 'ตีพิมพ์แล้ว', 'cited' => 12],
+            ['title' => 'การอนุรักษ์ภาษาถิ่นด้วยเทคโนโลยีดิจิทัล', 'author' => $naree->name, 'journal' => 'วารสารมนุษยศาสตร์ มรอ.', 'year' => '2565', 'status' => 'ตีพิมพ์แล้ว', 'cited' => 5],
+            ['title' => 'Active Learning in Early Childhood Education', 'author' => $somchai->name, 'journal' => 'Journal of Education Research', 'year' => '2566', 'status' => 'รอตีพิมพ์', 'cited' => 0],
+        ] as $article) {
+            Article::updateOrCreate(
+                ['title' => $article['title']],
+                [
+                    ...$article,
+                    'owner_user_id' => $usersByName[$article['author']]->id ?? $admin->id,
+                ],
+            );
+        }
+
+        foreach ([
+            ['title' => 'วิจัยปัญญาประดิษฐ์เพื่อการเกษตรยั่งยืน', 'researcher' => $admin->name, 'type' => 'ทุนภายใน', 'budget' => '300000', 'year' => '2567', 'status' => 'submitted'],
+            ['title' => 'การอนุรักษ์ภาษาถิ่นด้วย AI', 'researcher' => $naree->name, 'type' => 'ทุนภายนอก', 'budget' => '150000', 'year' => '2567', 'status' => 'approved', 'contract_no' => 'URU-2567-001', 'contract_date' => '2567-01-15'],
+            ['title' => 'นวัตกรรมการสอนเด็กปฐมวัย', 'researcher' => $somchai->name, 'type' => 'ทุนภายใน', 'budget' => '200000', 'year' => '2567', 'status' => 'rejected'],
+        ] as $proposal) {
+            Proposal::updateOrCreate(
+                ['title' => $proposal['title']],
+                [
+                    ...$proposal,
+                    'owner_user_id' => $usersByName[$proposal['researcher']]->id ?? $admin->id,
+                ],
+            );
+        }
+
+        foreach ([
+            ['project' => 'AI เพื่อการเกษตรอัจฉริยะ', 'title' => 'รายงานความก้าวหน้า ปีที่ 1', 'abstract' => 'พัฒนาโมเดล ML สำหรับวิเคราะห์คุณภาพดินและพยากรณ์ผลผลิต', 'date' => '2566-06-30', 'status' => 'submitted', 'researcher' => $admin->name],
+            ['project' => 'การพัฒนาและอนุรักษ์ภาษาถิ่นเหนือ', 'title' => 'รายงานฉบับสมบูรณ์', 'abstract' => 'รวบรวมคำศัพท์ภาษาถิ่นเหนือและจัดทำฐานข้อมูลเสียง', 'date' => '2566-09-30', 'status' => 'approved', 'researcher' => $naree->name],
+            ['project' => 'นวัตกรรมการเรียนรู้ปฐมวัยผ่านเทคโนโลยี', 'title' => 'รายงานร่างเพื่อขอรับข้อเสนอแนะ', 'abstract' => 'ทดสอบรูปแบบกิจกรรมการเรียนรู้ด้วยสื่อดิจิทัล', 'date' => '2567-03-15', 'status' => 'draft', 'researcher' => $somchai->name],
+        ] as $report) {
+            Report::updateOrCreate(
+                ['title' => $report['title']],
+                [
+                    ...$report,
+                    'owner_user_id' => $usersByName[$report['researcher']]->id ?? $admin->id,
+                ],
+            );
         }
     }
 }
