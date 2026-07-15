@@ -323,6 +323,11 @@ mockuser08@gmail.com / password
 mockuser09@gmail.com / password
 mockuser10@gmail.com / password
 
+ถ้า mockuser01@gmail.com login ได้แต่ข้อมูล "ของฉัน" ไม่ขึ้น หรือเพิ่มแล้วไม่เห็น:
+- ตรวจว่า users มี mockuser01 แล้วจริง
+- ตรวจว่า record ที่เพิ่มมี owner_user_id เป็น id ของ mockuser01
+- logout แล้ว login ใหม่ เพื่อให้ frontend รับ id/profile ล่าสุด
+
 Seeder จะใส่ตัวอย่าง:
 - users
 - researchers

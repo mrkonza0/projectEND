@@ -27,12 +27,15 @@ export default function LoginScreen() {
         const assignedRole = await api.getUserRole(email);
         const role: 'admin' | 'user' = backendRole || assignedRole;
 
+        const loginUser = data.user;
         const existing = await api.getProfile();
+        const sameAccount = existing?.email?.toLowerCase?.() === email.trim().toLowerCase();
+        const profile = sameAccount ? { ...loginUser, ...existing } : loginUser;
         let userName = '';
-        if (existing?.name) {
-          const profileRole: 'admin' | 'user' = existing.role === 'admin' ? 'admin' : role;
-          await saveUser({ ...existing, role: profileRole });
-          userName = existing.name;
+        if (profile?.name) {
+          const profileRole: 'admin' | 'user' = profile.role === 'admin' ? 'admin' : role;
+          await saveUser({ ...profile, email: profile.email || email, role: profileRole });
+          userName = profile.name;
         } else {
           const name = email.split('@')[0].replace(/[._]/g, ' ');
           await saveUser({ name, email, faculty: '', major: '', position: '', phone: '', role });

@@ -55,12 +55,36 @@ const storage = {
   },
 };
 
+const MOCK_USERS = Array.from({ length: 10 }, (_, i) => {
+  const suffix = String(i + 1).padStart(2, '0');
+  return {
+    id: 100 + i,
+    name: `Mock User ${suffix}`,
+    email: `mockuser${suffix}@gmail.com`,
+    faculty: 'หน่วยงานทดสอบ',
+    major: 'สาขาทดสอบ',
+    position: 'ผู้ใช้งานทดสอบ',
+    phone: `080-000-00${suffix}`,
+    role: 'user' as const,
+  };
+});
+
 // Seed data shown on first launch (demo mode)
 const SEED = {
   researchers: [
     { id: 1, name: 'ภาศพงศ์ องค์ธนาวัฒน์', faculty: 'วิทยาศาสตร์และเทคโนโลยี', expertise: 'วิทยาการคอมพิวเตอร์', email: 'admin@admin.com', phone: '055-123-456' },
     { id: 2, name: 'สมชาย ใจดี', faculty: 'ครุศาสตร์', expertise: 'การศึกษาปฐมวัย', email: 'somchai@uru.ac.th', phone: '055-234-567' },
     { id: 3, name: 'นารี สุขสงบ', faculty: 'มนุษยศาสตร์และสังคมศาสตร์', expertise: 'ภาษาถิ่น', email: 'naree@uru.ac.th', phone: '055-345-678' },
+    ...MOCK_USERS.map(user => ({
+      id: user.id,
+      owner_user_id: user.id,
+      owner_email: user.email,
+      name: user.name,
+      faculty: user.faculty,
+      expertise: 'ข้อมูลทดสอบระบบ',
+      email: user.email,
+      phone: user.phone,
+    })),
   ],
   projects: [
     { id: 1, title: 'AI เพื่อการเกษตรอัจฉริยะ', researcher: 'ภาศพงศ์ องค์ธนาวัฒน์', budget: '250000', year: '2566', status: 'กำลังดำเนินการ' },
@@ -97,8 +121,36 @@ const ensureInit = async () => {
     await storage.set('reports', SEED.reports);
     await storage.set('__next_proposal_id', 4);
     await storage.set('__next_report_id', 3);
+    await storage.set('all_users', [
+      { id: 1, name: 'ภาศพงศ์ องค์ธนาวัฒน์', email: 'admin@admin.com', role: 'admin', faculty: 'วิทยาศาสตร์และเทคโนโลยี', position: 'อาจารย์ประจำ' },
+      { id: 2, name: 'สมชาย ใจดี', email: 'somchai@uru.ac.th', role: 'user', faculty: 'ครุศาสตร์', position: 'อาจารย์' },
+      { id: 3, name: 'นารี สุขสงบ', email: 'naree@uru.ac.th', role: 'user', faculty: 'มนุษยศาสตร์และสังคมศาสตร์', position: 'อาจารย์' },
+      ...MOCK_USERS,
+    ]);
     await storage.set('__db_inited', true);
   }
+
+  const users: any[] = (await storage.get('all_users')) || [];
+  const usersByEmail = new Map(users.map(user => [String(user.email).toLowerCase(), user]));
+  for (const user of MOCK_USERS) usersByEmail.set(user.email.toLowerCase(), { ...usersByEmail.get(user.email.toLowerCase()), ...user });
+  await storage.set('all_users', Array.from(usersByEmail.values()));
+
+  const researchers: any[] = (await storage.get('researchers')) || [];
+  const researchersByEmail = new Map(researchers.map(researcher => [String(researcher.email).toLowerCase(), researcher]));
+  for (const user of MOCK_USERS) {
+    researchersByEmail.set(user.email.toLowerCase(), {
+      ...researchersByEmail.get(user.email.toLowerCase()),
+      id: researchersByEmail.get(user.email.toLowerCase())?.id ?? user.id,
+      owner_user_id: user.id,
+      owner_email: user.email,
+      name: user.name,
+      faculty: user.faculty,
+      expertise: 'ข้อมูลทดสอบระบบ',
+      email: user.email,
+      phone: user.phone,
+    });
+  }
+  await storage.set('researchers', Array.from(researchersByEmail.values()));
 };
 
 const nextId = async (key: string): Promise<number> => {
@@ -373,6 +425,34 @@ const normalizeProfile = (item: any) => {
   };
 };
 
+const getStoredProfile = async () => (await storage.get('user_profile')) || {};
+
+const withLocalOwner = async (data: any) => {
+  const profile = await getStoredProfile();
+  return {
+    ...data,
+    owner_user_id: data.owner_user_id ?? profile.id,
+    owner_email: data.owner_email ?? profile.email,
+    owner_name: data.owner_name ?? profile.name,
+    is_owner: true,
+  };
+};
+
+const localList = async (key: string, scope: 'mine' | 'all' = 'all') => {
+  const list: any[] = (await storage.get(key)) || [];
+  if (scope !== 'mine') return list;
+  const profile = await getStoredProfile();
+  const userId = profile.id != null ? String(profile.id) : '';
+  const email = String(profile.email || '').trim().toLowerCase();
+  return list
+    .filter(item => {
+      const ownerId = item.owner_user_id ?? item.owner_id ?? item.user_id ?? item.owner?.id;
+      const ownerEmail = String(item.owner_email ?? item.owner?.email ?? '').trim().toLowerCase();
+      return (userId && ownerId != null && String(ownerId) === userId) || (email && ownerEmail === email);
+    })
+    .map(item => ({ ...item, is_owner: true }));
+};
+
 export const api = {
   getResearchTypes: async (): Promise<any[]> => {
     const res = await fetchT(`${BASE_URL}/ref/research-types`, { headers: await authHeaders() });
@@ -463,6 +543,7 @@ export const api = {
       const user = rawUser ? normalizeProfile(rawUser) : undefined;
       if (token) {
         await setToken(token);
+        if (user) await storage.set('user_profile', user);
         await ensureInit();
       }
       return token ? { ...data, token, user } : data;
@@ -486,7 +567,7 @@ export const api = {
       const json = await res.json();
       return extractList(json).map(item => ({ ...normalizeResearch(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
-      return (await storage.get('projects')) || [];
+      return localList('projects', scope);
     }
   },
 
@@ -499,7 +580,7 @@ export const api = {
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('projects')) || [];
-      const item = { id: await nextId('__next_project_id'), ...data };
+      const item = await withLocalOwner({ id: await nextId('__next_project_id'), ...data });
       await storage.set('projects', [...list, item]);
       return item;
     }
@@ -535,7 +616,7 @@ export const api = {
       const json = await res.json();
       return extractList(json).map(item => ({ ...normalizeJournal(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
-      return (await storage.get('articles')) || [];
+      return localList('articles', scope);
     }
   },
 
@@ -547,7 +628,7 @@ export const api = {
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('articles')) || [];
-      const item = { id: await nextId('__next_article_id'), ...data };
+      const item = await withLocalOwner({ id: await nextId('__next_article_id'), ...data });
       await storage.set('articles', [...list, item]);
       return item;
     }
@@ -583,7 +664,7 @@ export const api = {
       const json = await res.json();
       return extractList(json).map(normalizeOwnedRecord);
     } catch {
-      return (await storage.get('researchers')) || [];
+      return localList('researchers', 'all');
     }
   },
 
@@ -595,7 +676,7 @@ export const api = {
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('researchers')) || [];
-      const item = { id: await nextId('__next_researcher_id'), ...data };
+      const item = await withLocalOwner({ id: await nextId('__next_researcher_id'), ...data });
       await storage.set('researchers', [...list, item]);
       return item;
     }
@@ -679,7 +760,7 @@ export const api = {
       const json = await res.json();
       return extractList(json).map(item => ({ ...normalizeProposal(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
-      return (await storage.get('proposals')) || [];
+      return localList('proposals', scope);
     }
   },
 
@@ -691,7 +772,7 @@ export const api = {
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('proposals')) || [];
-      const item = { id: await nextId('__next_proposal_id'), ...data };
+      const item = await withLocalOwner({ id: await nextId('__next_proposal_id'), ...data });
       await storage.set('proposals', [...list, item]);
       return item;
     }
@@ -738,7 +819,7 @@ export const api = {
       }));
     } catch (error) {
       rethrowServerError(error);
-      return (await storage.get('uploaded_files')) || [];
+      return localList('uploaded_files', 'all');
     }
   },
 
@@ -762,7 +843,7 @@ export const api = {
       rethrowServerError(error);
     }
     const list = (await storage.get('uploaded_files')) || [];
-    const item = { id: await nextId('__next_file_id'), ...data };
+    const item = await withLocalOwner({ id: await nextId('__next_file_id'), ...data });
     await storage.set('uploaded_files', [...list, item]);
     return item;
   },
@@ -836,7 +917,7 @@ export const api = {
       const json = await res.json();
       return extractList(json).map(item => ({ ...normalizeReport(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
-      return (await storage.get('reports')) || [];
+      return localList('reports', scope);
     }
   },
 
@@ -848,7 +929,7 @@ export const api = {
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('reports')) || [];
-      const item = { id: await nextId('__next_report_id'), ...data };
+      const item = await withLocalOwner({ id: await nextId('__next_report_id'), ...data });
       await storage.set('reports', [...list, item]);
       return item;
     }
