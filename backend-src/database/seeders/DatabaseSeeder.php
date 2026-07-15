@@ -54,17 +54,52 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        $mockUsers = [];
+
+        foreach (range(1, 10) as $number) {
+            $suffix = str_pad((string) $number, 2, '0', STR_PAD_LEFT);
+
+            $mockUsers[] = User::updateOrCreate(
+                ['email' => "mockuser{$suffix}@gmail.com"],
+                [
+                    'name'     => "Mock User {$suffix}",
+                    'password' => Hash::make('password'),
+                    'faculty'  => 'หน่วยงานทดสอบ',
+                    'major'    => 'สาขาทดสอบ',
+                    'position' => 'ผู้ใช้งานทดสอบ',
+                    'phone'    => "080-000-00{$suffix}",
+                    'role'     => 'user',
+                ],
+            );
+        }
+
         $usersByName = [
             $admin->name => $admin,
             $somchai->name => $somchai,
             $naree->name => $naree,
         ];
 
-        foreach ([
+        foreach ($mockUsers as $mockUser) {
+            $usersByName[$mockUser->name] = $mockUser;
+        }
+
+        $researchers = [
             ['name' => $admin->name, 'faculty' => $admin->faculty, 'expertise' => 'วิทยาการคอมพิวเตอร์', 'email' => 'admin@uru.ac.th', 'phone' => $admin->phone],
             ['name' => $somchai->name, 'faculty' => $somchai->faculty, 'expertise' => 'การศึกษาปฐมวัย', 'email' => $somchai->email, 'phone' => $somchai->phone],
             ['name' => $naree->name, 'faculty' => $naree->faculty, 'expertise' => 'ภาษาถิ่น', 'email' => $naree->email, 'phone' => $naree->phone],
-        ] as $researcher) {
+        ];
+
+        foreach ($mockUsers as $mockUser) {
+            $researchers[] = [
+                'name' => $mockUser->name,
+                'faculty' => $mockUser->faculty,
+                'expertise' => 'ข้อมูลทดสอบระบบ',
+                'email' => $mockUser->email,
+                'phone' => $mockUser->phone,
+            ];
+        }
+
+        foreach ($researchers as $researcher) {
             Researcher::updateOrCreate(
                 ['email' => $researcher['email']],
                 $researcher,

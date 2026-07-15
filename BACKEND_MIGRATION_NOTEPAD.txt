@@ -269,6 +269,19 @@ admin@admin.com / password
 somchai@uru.ac.th / password
 naree@uru.ac.th / password
 
+บัญชี mock user:
+
+mockuser01@gmail.com / password
+mockuser02@gmail.com / password
+mockuser03@gmail.com / password
+mockuser04@gmail.com / password
+mockuser05@gmail.com / password
+mockuser06@gmail.com / password
+mockuser07@gmail.com / password
+mockuser08@gmail.com / password
+mockuser09@gmail.com / password
+mockuser10@gmail.com / password
+
 Seeder จะใส่ตัวอย่าง:
 - users
 - researchers
@@ -303,4 +316,3 @@ reports.owner_user_id จาก reports.researcher = users.name
 - budget แสดงผิด
 - upload รูป/ไฟล์ไม่ได้
 - API error ว่า column/table ไม่มี
-
