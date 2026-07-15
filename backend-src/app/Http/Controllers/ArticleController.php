@@ -70,7 +70,7 @@ class ArticleController extends Controller
 
     public function destroy(Request $request, Article $article)
     {
-        abort_unless($this->canManage($request->user(), $article), 403, 'You can delete only your own records.');
+        abort_unless($this->canDelete($request->user(), $article), 403, 'Only the record owner or admin can delete this record.');
 
         $article->delete();
 
@@ -80,6 +80,12 @@ class ArticleController extends Controller
     private function canManage($user, Article $article): bool
     {
         return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $article);
+    }
+
+    private function canDelete($user, Article $article): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($article->owner_user_id && (string) $article->owner_user_id === (string) $user->id);
     }
 
     private function isOwner($user, Article $article): bool

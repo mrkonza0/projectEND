@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser } from '@/context/UserContext';
-import { canManage, filterOwned } from '@/services/permissions';
+import { canDelete, filterOwned } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import * as DocumentPicker from 'expo-document-picker';
@@ -196,7 +196,7 @@ export default function FilesScreen() {
           </View>
         ) : filtered.map((item) => {
           const ts = kindStyle(item.kind);
-          const canDel = canManage(user, item);
+          const canDel = canDelete(user, item);
           return (
             <View key={item.id} style={s.card}>
               <TouchableOpacity

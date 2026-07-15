@@ -125,6 +125,7 @@ entity_type:
 
 researchers
 - id
+- owner_user_id
 - name
 - prefix
 - first_name
@@ -154,6 +155,11 @@ owner_user_id = auth()->id()
 
 ห้ามใช้ชื่อ researcher/author เป็นตัวตัดสิน owner อย่างเดียว
 เพราะชื่อซ้ำ/เปลี่ยนชื่อ/พิมพ์ชื่อแทนกันได้
+
+กติกาการลบ:
+- admin ลบข้อมูลได้ทุก record
+- user ทั่วไปลบได้เฉพาะ record ที่ owner_user_id ตรงกับ user id ของตัวเอง
+- ถ้า owner_user_id เป็น NULL user ทั่วไปจะลบไม่ได้ ต้องให้ admin ลบหรือ backfill owner_user_id ก่อน
 
 
 4) API ที่ frontend ใช้
@@ -247,12 +253,14 @@ Frontend ใส่ method override ให้แล้ว
 เช็กจำนวนข้อมูล:
 
 SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM researchers;
 SELECT COUNT(*) FROM proposals;
 SELECT COUNT(*) FROM reports;
 SELECT COUNT(*) FROM files;
 
 เช็ก owner:
 
+SELECT id, name, owner_user_id FROM researchers;
 SELECT id, title, owner_user_id FROM proposals;
 SELECT id, title, owner_user_id FROM reports;
 
@@ -298,6 +306,7 @@ Seeder จะใส่ตัวอย่าง:
 
 ต้อง backfill owner_user_id:
 
+researchers.owner_user_id จาก researchers.email = users.email
 projects.owner_user_id จาก projects.researcher = users.name
 articles.owner_user_id จาก articles.author = users.name
 proposals.owner_user_id จาก proposals.researcher = users.name

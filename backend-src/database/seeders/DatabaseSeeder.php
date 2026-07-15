@@ -84,14 +84,15 @@ class DatabaseSeeder extends Seeder
         }
 
         $researchers = [
-            ['name' => $admin->name, 'faculty' => $admin->faculty, 'expertise' => 'วิทยาการคอมพิวเตอร์', 'email' => 'admin@uru.ac.th', 'phone' => $admin->phone],
-            ['name' => $somchai->name, 'faculty' => $somchai->faculty, 'expertise' => 'การศึกษาปฐมวัย', 'email' => $somchai->email, 'phone' => $somchai->phone],
-            ['name' => $naree->name, 'faculty' => $naree->faculty, 'expertise' => 'ภาษาถิ่น', 'email' => $naree->email, 'phone' => $naree->phone],
+            ['owner_user_id' => $admin->id, 'name' => $admin->name, 'faculty' => $admin->faculty, 'expertise' => 'วิทยาการคอมพิวเตอร์', 'email' => 'admin@uru.ac.th', 'phone' => $admin->phone],
+            ['owner_user_id' => $somchai->id, 'name' => $somchai->name, 'faculty' => $somchai->faculty, 'expertise' => 'การศึกษาปฐมวัย', 'email' => $somchai->email, 'phone' => $somchai->phone],
+            ['owner_user_id' => $naree->id, 'name' => $naree->name, 'faculty' => $naree->faculty, 'expertise' => 'ภาษาถิ่น', 'email' => $naree->email, 'phone' => $naree->phone],
         ];
 
         foreach ($mockUsers as $mockUser) {
             $researchers[] = [
                 'name' => $mockUser->name,
+                'owner_user_id' => $mockUser->id,
                 'faculty' => $mockUser->faculty,
                 'expertise' => 'ข้อมูลทดสอบระบบ',
                 'email' => $mockUser->email,

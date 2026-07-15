@@ -92,7 +92,7 @@ class ProposalController extends Controller
 
     public function destroy(Request $request, Proposal $proposal)
     {
-        abort_unless($this->canManage($request->user(), $proposal), 403, 'You can delete only your own records.');
+        abort_unless($this->canDelete($request->user(), $proposal), 403, 'Only the record owner or admin can delete this record.');
 
         $proposal->delete();
 
@@ -102,6 +102,12 @@ class ProposalController extends Controller
     private function canManage($user, Proposal $proposal): bool
     {
         return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $proposal);
+    }
+
+    private function canDelete($user, Proposal $proposal): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($proposal->owner_user_id && (string) $proposal->owner_user_id === (string) $user->id);
     }
 
     private function isOwner($user, Proposal $proposal): bool

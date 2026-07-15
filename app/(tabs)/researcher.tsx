@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser } from '@/context/UserContext';
-import { canManage } from '@/services/permissions';
+import { canDelete, canManage } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import { useEffect, useState } from 'react';
@@ -537,14 +537,14 @@ export default function ResearcherScreen() {
                     ) : null}
                   </View>
                 </View>
-                {canManage(user, r) && (
+                {(canManage(user, r) || canDelete(user, r)) && (
                   <View style={s.cardActions}>
-                    <TouchableOpacity onPress={() => openEdit(r)} style={s.editBtn}>
+                    {canManage(user, r) && <TouchableOpacity onPress={() => openEdit(r)} style={s.editBtn}>
                       <Ionicons name="pencil" size={13} color="#ca8a04" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(r.id)} style={s.delBtn}>
+                    </TouchableOpacity>}
+                    {canDelete(user, r) && <TouchableOpacity onPress={() => handleDelete(r.id)} style={s.delBtn}>
                       <Ionicons name="trash-outline" size={13} color="#dc2626" />
-                    </TouchableOpacity>
+                    </TouchableOpacity>}
                   </View>
                 )}
               </View>

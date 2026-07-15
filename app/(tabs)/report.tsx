@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser, type UserProfile } from '@/context/UserContext';
-import { isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
+import { canDelete, isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import { useEffect, useState } from 'react';
@@ -119,10 +119,10 @@ export default function ReportScreen() {
                     <Text style={[s.badgeTxt, { color: sc.text }]}>{r.status}</Text>
                   </View>
                 </View>
-                {(isAdmin(user) || canOwnReport(user, r)) && (
+                {(canOwnReport(user, r) || canDelete(user, r)) && (
                   <View style={s.actions}>
-                    <TouchableOpacity onPress={() => openEdit(r)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => del(r.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>
+                    {canOwnReport(user, r) && <TouchableOpacity onPress={() => openEdit(r)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>}
+                    {canDelete(user, r) && <TouchableOpacity onPress={() => del(r.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>}
                   </View>
                 )}
               </View>

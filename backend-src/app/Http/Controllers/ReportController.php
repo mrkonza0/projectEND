@@ -81,7 +81,7 @@ class ReportController extends Controller
 
     public function destroy(Request $request, Report $report)
     {
-        abort_unless($this->canManage($request->user(), $report), 403, 'You can delete only your own records.');
+        abort_unless($this->canDelete($request->user(), $report), 403, 'Only the record owner or admin can delete this record.');
 
         $report->delete();
 
@@ -91,6 +91,12 @@ class ReportController extends Controller
     private function canManage($user, Report $report): bool
     {
         return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $report);
+    }
+
+    private function canDelete($user, Report $report): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($report->owner_user_id && (string) $report->owner_user_id === (string) $user->id);
     }
 
     private function isOwner($user, Report $report): bool

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser } from '@/context/UserContext';
-import { canManage, mergeOwnedRecords } from '@/services/permissions';
+import { canDelete, canManage, mergeOwnedRecords } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import { useEffect, useState } from 'react';
@@ -137,10 +137,10 @@ export default function ArticleScreen() {
                     </View>
                   </View>
                 </View>
-                {canManage(user, a) && (
+                {(canManage(user, a) || canDelete(user, a)) && (
                   <View style={s.actions}>
-                    <TouchableOpacity onPress={() => openEdit(a)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(a.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>
+                    {canManage(user, a) && <TouchableOpacity onPress={() => openEdit(a)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>}
+                    {canDelete(user, a) && <TouchableOpacity onPress={() => handleDelete(a.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>}
                   </View>
                 )}
               </View>

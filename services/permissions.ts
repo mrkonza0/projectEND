@@ -6,6 +6,28 @@ export function canManage(user: UserProfile, record: any): boolean {
   return isOwner(user, record);
 }
 
+/** true if user can delete the record.
+ *  Delete permission is stricter than display/edit ownership:
+ *  only the account stored in owner_user_id (or admin) can delete.
+ */
+export function canDelete(user: UserProfile, record: any): boolean {
+  if (user.role === 'admin') return true;
+  return isCreatorOwner(user, record);
+}
+
+/** true only when ownership is tied to the logged-in user's id/email from backend owner fields. */
+export function isCreatorOwner(user: UserProfile, record: any): boolean {
+  if (!record) return false;
+
+  const userId = user.id != null ? String(user.id) : '';
+  const ownerId = record.owner_user_id ?? record.owner_id ?? record.user_id ?? record.created_by_user_id ?? record.owner?.id ?? record.owner_user?.id ?? record.created_by?.id;
+  if (userId && ownerId != null && String(ownerId) === userId) return true;
+
+  const email = user.email?.trim().toLowerCase();
+  const ownerEmail = (record.owner_email ?? record.owner?.email ?? record.owner_user?.email ?? record.created_by?.email ?? '').trim().toLowerCase();
+  return Boolean(email && ownerEmail === email);
+}
+
 /** true if the record belongs to this user */
 export function isOwner(user: UserProfile, record: any): boolean {
   if (record.is_owner === true || record.is_mine === true) return true;

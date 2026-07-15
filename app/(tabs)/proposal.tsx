@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser } from '@/context/UserContext';
-import { canManage, canViewBudget, isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
+import { canDelete, canManage, canViewBudget, isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import { useEffect, useState } from 'react';
@@ -148,10 +148,10 @@ export default function ProposalScreen() {
                     <Text style={s.budgetTxt}>{canViewBudget(user, p) ? `฿${Number(p.budget || 0).toLocaleString()}` : ''}</Text>
                   </View>
                 </View>
-                {canManage(user, p) && (
+                {(canManage(user, p) || canDelete(user, p)) && (
                   <View style={s.actions}>
-                    <TouchableOpacity onPress={() => openEdit(p)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => del(p.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>
+                    {canManage(user, p) && <TouchableOpacity onPress={() => openEdit(p)} style={s.editBtn}><Ionicons name="pencil" size={14} color="#ca8a04" /></TouchableOpacity>}
+                    {canDelete(user, p) && <TouchableOpacity onPress={() => del(p.id)} style={s.delBtn}><Ionicons name="trash-outline" size={14} color="#dc2626" /></TouchableOpacity>}
                   </View>
                 )}
               </View>

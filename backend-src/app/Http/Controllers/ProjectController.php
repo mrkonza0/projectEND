@@ -74,7 +74,7 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, Project $project)
     {
-        abort_unless($this->canManage($request->user(), $project), 403, 'You can delete only your own records.');
+        abort_unless($this->canDelete($request->user(), $project), 403, 'Only the record owner or admin can delete this record.');
 
         $project->delete();
 
@@ -84,6 +84,12 @@ class ProjectController extends Controller
     private function canManage($user, Project $project): bool
     {
         return ($user->role ?? 'user') === 'admin' || $this->isOwner($user, $project);
+    }
+
+    private function canDelete($user, Project $project): bool
+    {
+        return ($user->role ?? 'user') === 'admin'
+            || ($project->owner_user_id && (string) $project->owner_user_id === (string) $user->id);
     }
 
     private function isOwner($user, Project $project): bool
