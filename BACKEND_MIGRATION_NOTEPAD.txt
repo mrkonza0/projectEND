@@ -4,6 +4,39 @@ URU Research / URU Smart Backend Migration Note
 ไฟล์นี้ใช้ส่งให้ฝั่ง Backend/Server เพื่อ migrate ฐานข้อมูลให้ frontend ใช้งานได้ครบ
 
 
+ล่าสุดที่ต้อง migrate เพิ่ม
+---------------------------
+
+ต้องมี migration นี้บน server:
+
+backend-src/database/migrations/2026_07_15_000005_add_owner_user_id_to_researchers_table.php
+
+สิ่งที่ migration นี้ทำ:
+- เพิ่มคอลัมน์ researchers.owner_user_id
+- ผูก foreign key ไปที่ users.id
+- backfill owner_user_id ให้ researchers เดิม โดยเทียบ researchers.email = users.email
+
+เหตุผล:
+- เพื่อให้ระบบรู้ว่า "นักวิจัย" record ไหนถูกเพิ่มโดย user คนไหน
+- user ทั่วไปจะลบได้เฉพาะข้อมูลที่ owner_user_id เป็นของตัวเอง
+- admin ลบได้ทุกข้อมูล
+- ถ้า owner_user_id เป็น NULL user ทั่วไปจะลบไม่ได้
+
+คำสั่งที่ต้องรันหลัง deploy โค้ดล่าสุด:
+
+php artisan migrate --force
+php artisan db:seed --force
+php artisan optimize:clear
+
+คำสั่งเช็กหลัง migrate:
+
+SELECT id, name, email, owner_user_id FROM researchers;
+SELECT id, title, owner_user_id FROM projects;
+SELECT id, title, owner_user_id FROM articles;
+SELECT id, title, owner_user_id FROM proposals;
+SELECT id, title, owner_user_id FROM reports;
+
+
 1) คำสั่งที่ต้องรันบน Server จริง
 -----------------------------------
 
