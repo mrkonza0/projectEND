@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '@/components/AppHeader';
 import { useUser } from '@/context/UserContext';
-import { canManage, canViewBudget, isAdmin, isOwner, mergeOwnedRecords } from '@/services/permissions';
+import { canManage, canViewBudget, isOwner, mergeOwnedRecords } from '@/services/permissions';
 import { api, getApiErrorMessage } from '@/services/api';
 import { confirmAction } from '@/services/confirm';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -499,7 +499,7 @@ export default function ProjectScreen() {
             ] as const).map(({ k, ph, icon, num }) => (
               <View key={k} style={s.inputWrap}>
                 <Ionicons name={icon} size={16} color="#9ca3af" />
-                <TextInput style={s.input} placeholder={ph} placeholderTextColor="#9ca3af" value={(form as any)[k]} onChangeText={v => setForm(f => ({ ...f, [k]: v }))} keyboardType={num ? 'numeric' : 'default'} editable={isAdmin(user) || k !== 'researcher'} />
+                <TextInput style={s.input} placeholder={ph} placeholderTextColor="#9ca3af" value={(form as any)[k]} onChangeText={v => setForm(f => ({ ...f, [k]: v }))} keyboardType={num ? 'numeric' : 'default'} />
               </View>
             ))}
             <Text style={s.pickerLabel}>ประเภทงานวิจัย *</Text>

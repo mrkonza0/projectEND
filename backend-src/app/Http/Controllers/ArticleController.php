@@ -41,7 +41,6 @@ class ArticleController extends Controller
         $data = $request->only(['title', 'author', 'journal', 'year', 'status', 'cited']);
 
         if (($request->user()->role ?? 'user') !== 'admin') {
-            $data['author'] = $request->user()->name;
             $data['owner_user_id'] = $request->user()->id;
         } elseif ($request->filled('owner_user_id')) {
             $data['owner_user_id'] = $request->input('owner_user_id');
@@ -59,7 +58,6 @@ class ArticleController extends Controller
         $data = $request->only(['title', 'author', 'journal', 'year', 'status', 'cited']);
 
         if (($request->user()->role ?? 'user') !== 'admin') {
-            $data['author'] = $request->user()->name;
             $data['owner_user_id'] = $request->user()->id;
         } elseif ($request->filled('owner_user_id')) {
             $data['owner_user_id'] = $request->input('owner_user_id');

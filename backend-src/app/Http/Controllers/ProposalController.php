@@ -48,7 +48,6 @@ class ProposalController extends Controller
         ]);
 
         if (($request->user()->role ?? 'user') !== 'admin') {
-            $data['researcher'] = $request->user()->name;
             $data['owner_user_id'] = $request->user()->id;
         } elseif ($request->filled('owner_user_id')) {
             $data['owner_user_id'] = $request->input('owner_user_id');
@@ -80,7 +79,6 @@ class ProposalController extends Controller
         ]);
 
         if (($request->user()->role ?? 'user') !== 'admin') {
-            $data['researcher'] = $request->user()->name;
             $data['owner_user_id'] = $request->user()->id;
             unset($data['status'], $data['contract_no'], $data['contract_date']);
         } elseif ($request->filled('owner_user_id')) {
