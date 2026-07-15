@@ -114,6 +114,16 @@ const fetchT = async (url: string, options?: RequestInit, ms = 3000): Promise<Re
   try {
     const requestedMethod = (options?.method || 'GET').toUpperCase();
     const needsOverride = ['PUT', 'PATCH', 'DELETE'].includes(requestedMethod);
+    const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
+    let body = options?.body;
+    if (needsOverride && !isFormData) {
+      try {
+        const parsed = typeof body === 'string' && body ? JSON.parse(body) : {};
+        body = JSON.stringify({ ...parsed, _method: requestedMethod });
+      } catch {
+        body = JSON.stringify({ _method: requestedMethod });
+      }
+    }
     const headers = {
       ...(options?.headers || {}),
       ...(needsOverride ? { 'X-HTTP-Method-Override': requestedMethod } : {}),
@@ -122,7 +132,7 @@ const fetchT = async (url: string, options?: RequestInit, ms = 3000): Promise<Re
       ...options,
       method: needsOverride ? 'POST' : requestedMethod,
       headers,
-      body: needsOverride && options?.body == null ? '{}' : options?.body,
+      body,
       signal: ctrl.signal,
     });
     clearTimeout(timer);
@@ -273,6 +283,69 @@ const normalizeOwnedRecord = (item: any) => ({
   owner_email: item.owner_email ?? item.owner?.email ?? item.owner_user?.email ?? item.created_by?.email,
 });
 
+const PROPOSAL_STATUS_TO_SERVER: Record<string, string> = {
+  'รอพิจารณา': 'submitted',
+  'อนุมัติ': 'approved',
+  'ปฏิเสธ': 'rejected',
+  'ร่าง': 'draft',
+};
+
+const PROPOSAL_STATUS_FROM_SERVER: Record<string, string> = {
+  draft: 'รอพิจารณา',
+  submitted: 'รอพิจารณา',
+  approved: 'อนุมัติ',
+  rejected: 'ปฏิเสธ',
+};
+
+const REPORT_STATUS_TO_SERVER: Record<string, string> = {
+  'ร่างรายงาน': 'draft',
+  'ส่งแล้ว': 'submitted',
+  'แก้ไข': 'revision_requested',
+  'ผ่านการตรวจ': 'approved',
+};
+
+const REPORT_STATUS_FROM_SERVER: Record<string, string> = {
+  draft: 'ร่างรายงาน',
+  submitted: 'ส่งแล้ว',
+  revision_requested: 'แก้ไข',
+  approved: 'ผ่านการตรวจ',
+};
+
+const normalizeProposal = (item: any) => {
+  const record = normalizeOwnedRecord(item);
+  return {
+    ...record,
+    title: record.title ?? record.name ?? '',
+    type: record.type ?? record.proposal_type ?? '',
+    status: PROPOSAL_STATUS_FROM_SERVER[record.status] ?? record.status ?? '',
+    budget: record.budget ?? record.amount ?? '',
+    year: record.year ?? record.fiscal_year ?? '',
+  };
+};
+
+const normalizeReport = (item: any) => {
+  const record = normalizeOwnedRecord(item);
+  return {
+    ...record,
+    project: record.project ?? record.proposal?.title ?? record.proposal_title ?? '',
+    abstract: record.abstract ?? record.content ?? '',
+    status: REPORT_STATUS_FROM_SERVER[record.status] ?? record.status ?? '',
+  };
+};
+
+const toProposalPayload = (data: any) => ({
+  ...data,
+  summary: data.summary ?? data.abstract ?? data.detail ?? '',
+  budget: data.budget === '' || data.budget == null ? undefined : Number(data.budget),
+  status: PROPOSAL_STATUS_TO_SERVER[data.status] ?? data.status,
+});
+
+const toReportPayload = (data: any) => ({
+  ...data,
+  content: data.content ?? data.abstract ?? '',
+  status: REPORT_STATUS_TO_SERVER[data.status] ?? data.status,
+});
+
 const normalizeProfile = (item: any) => {
   const account = item?.user ?? item?.account ?? {};
   const details = item?.profile ?? {};
@@ -309,6 +382,25 @@ export const api = {
   getJournalTypes: async (): Promise<any[]> => {
     const res = await fetchT(`${BASE_URL}/ref/journal-types`, { headers: await authHeaders() });
     return extractList(await res.json()).map(normalizeReference);
+  },
+
+  getMainUnits: async (): Promise<any[]> => {
+    const res = await fetchT(`${BASE_URL}/main-units`, { headers: await authHeaders() });
+    return extractList(await res.json()).map(normalizeReference);
+  },
+
+  getSubUnits: async (): Promise<any[]> => {
+    const res = await fetchT(`${BASE_URL}/sub-units`, { headers: await authHeaders() });
+    return extractList(await res.json()).map(normalizeReference);
+  },
+
+  getProfileOptions: async (): Promise<{ main_units: any[]; sub_units: any[] }> => {
+    const res = await fetchT(`${BASE_URL}/ref/profile-options`, { headers: await authHeaders() });
+    const json = await res.json();
+    return {
+      main_units: (json.main_units ?? json.data?.main_units ?? []).map(normalizeReference),
+      sub_units: (json.sub_units ?? json.data?.sub_units ?? []).map(normalizeReference),
+    };
   },
 
   getNotifications: async (): Promise<any[] | null> => {
@@ -585,7 +677,7 @@ export const api = {
     try {
       const res = await fetchT(`${BASE_URL}/proposals?scope=${scope}&per_page=100`, { headers: await authHeaders() });
       const json = await res.json();
-      return extractList(json).map(item => ({ ...normalizeOwnedRecord(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
+      return extractList(json).map(item => ({ ...normalizeProposal(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
       return (await storage.get('proposals')) || [];
     }
@@ -593,9 +685,9 @@ export const api = {
 
   createProposal: async (data: any): Promise<any> => {
     try {
-      const res = await fetchT(`${BASE_URL}/proposals`, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(data) });
+      const res = await fetchT(`${BASE_URL}/proposals`, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(toProposalPayload(data)) });
       const json = await res.json();
-      return normalizeOwnedRecord(json.data ?? json);
+      return normalizeProposal(json.data ?? json);
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('proposals')) || [];
@@ -607,9 +699,9 @@ export const api = {
 
   updateProposal: async (id: number, data: any): Promise<any> => {
     try {
-      const res = await fetchT(`${BASE_URL}/proposals/${id}`, { method: 'PUT', headers: await authHeaders(), body: JSON.stringify(data) });
+      const res = await fetchT(`${BASE_URL}/proposals/${id}`, { method: 'PUT', headers: await authHeaders(), body: JSON.stringify(toProposalPayload(data)) });
       const json = await res.json();
-      return normalizeOwnedRecord(json.data ?? json);
+      return normalizeProposal(json.data ?? json);
     } catch (error) {
       rethrowServerError(error);
       const list: any[] = (await storage.get('proposals')) || [];
@@ -629,9 +721,12 @@ export const api = {
   },
 
   // ── Uploaded Files ────────────────────────────────────────────────────────
-  getFiles: async (): Promise<any[]> => {
+  getFiles: async (params?: { entity_type?: 'proposal' | 'report' | 'journal' | string; entity_id?: number | string }): Promise<any[]> => {
     try {
-      const res = await fetchT(`${BASE_URL}/files?per_page=100`, { headers: await authHeaders() });
+      const query = new URLSearchParams({ per_page: '100' });
+      if (params?.entity_type) query.set('entity_type', String(params.entity_type));
+      if (params?.entity_id != null) query.set('entity_id', String(params.entity_id));
+      const res = await fetchT(`${BASE_URL}/files?${query.toString()}`, { headers: await authHeaders() });
       return extractList(await res.json()).map((file: any) => ({
         ...file,
         name: file.name ?? file.original_name ?? file.file_name ?? '',
@@ -647,7 +742,7 @@ export const api = {
     }
   },
 
-  addFile: async (data: { name: string; uri: string; mime: string; size: number; date: string; owner: string }): Promise<any> => {
+  addFile: async (data: { name: string; uri: string; mime: string; size: number; date: string; owner: string; entity_type?: string; entity_id?: number | string }): Promise<any> => {
     try {
       const form = new FormData();
       if (Platform.OS === 'web') {
@@ -656,6 +751,8 @@ export const api = {
       } else {
         form.append('file', { uri: data.uri, name: data.name, type: data.mime } as any);
       }
+      if (data.entity_type) form.append('entity_type', data.entity_type);
+      if (data.entity_id != null) form.append('entity_id', String(data.entity_id));
       const res = await fetchT(`${BASE_URL}/files`, {
         method: 'POST', headers: await authOnlyHeaders(), body: form,
       }, 30000);
@@ -737,7 +834,7 @@ export const api = {
     try {
       const res = await fetchT(`${BASE_URL}/reports?scope=${scope}&per_page=100`, { headers: await authHeaders() });
       const json = await res.json();
-      return extractList(json).map(item => ({ ...normalizeOwnedRecord(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
+      return extractList(json).map(item => ({ ...normalizeReport(item), ...(scope === 'mine' ? { is_owner: true } : {}) }));
     } catch {
       return (await storage.get('reports')) || [];
     }
@@ -745,9 +842,9 @@ export const api = {
 
   createReport: async (data: any): Promise<any> => {
     try {
-      const res = await fetchT(`${BASE_URL}/reports`, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(data) });
+      const res = await fetchT(`${BASE_URL}/reports`, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(toReportPayload(data)) });
       const json = await res.json();
-      return normalizeOwnedRecord(json.data ?? json);
+      return normalizeReport(json.data ?? json);
     } catch (error) {
       rethrowServerError(error);
       const list = (await storage.get('reports')) || [];
@@ -759,9 +856,9 @@ export const api = {
 
   updateReport: async (id: number, data: any): Promise<any> => {
     try {
-      const res = await fetchT(`${BASE_URL}/reports/${id}`, { method: 'PUT', headers: await authHeaders(), body: JSON.stringify(data) });
+      const res = await fetchT(`${BASE_URL}/reports/${id}`, { method: 'PUT', headers: await authHeaders(), body: JSON.stringify(toReportPayload(data)) });
       const json = await res.json();
-      return normalizeOwnedRecord(json.data ?? json);
+      return normalizeReport(json.data ?? json);
     } catch (error) {
       rethrowServerError(error);
       const list: any[] = (await storage.get('reports')) || [];

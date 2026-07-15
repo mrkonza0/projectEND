@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('files', function (Blueprint $table) {
             $table->id();
             $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('entity_type')->nullable();
+            $table->unsignedBigInteger('entity_id')->nullable();
             $table->string('name');
             $table->string('original_name')->nullable();
             $table->string('mime_type')->default('application/octet-stream');

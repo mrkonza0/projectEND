@@ -43,6 +43,28 @@ Route::middleware('auth:sanctum')->group(function () {
         ['id' => 2, 'name' => 'International journal'],
         ['id' => 3, 'name' => 'Conference'],
     ]));
+    Route::get('/main-units', fn () => response()->json([
+        ['id' => 1, 'name' => 'คณะวิทยาศาสตร์และเทคโนโลยี'],
+        ['id' => 2, 'name' => 'คณะครุศาสตร์'],
+        ['id' => 3, 'name' => 'คณะมนุษยศาสตร์และสังคมศาสตร์'],
+    ]));
+    Route::get('/sub-units', fn () => response()->json([
+        ['id' => 1, 'main_unit_id' => 1, 'name' => 'วิทยาการคอมพิวเตอร์'],
+        ['id' => 2, 'main_unit_id' => 2, 'name' => 'การศึกษาปฐมวัย'],
+        ['id' => 3, 'main_unit_id' => 3, 'name' => 'ภาษาไทย'],
+    ]));
+    Route::get('/ref/profile-options', fn () => response()->json([
+        'main_units' => [
+            ['id' => 1, 'name' => 'คณะวิทยาศาสตร์และเทคโนโลยี'],
+            ['id' => 2, 'name' => 'คณะครุศาสตร์'],
+            ['id' => 3, 'name' => 'คณะมนุษยศาสตร์และสังคมศาสตร์'],
+        ],
+        'sub_units' => [
+            ['id' => 1, 'main_unit_id' => 1, 'name' => 'วิทยาการคอมพิวเตอร์'],
+            ['id' => 2, 'main_unit_id' => 2, 'name' => 'การศึกษาปฐมวัย'],
+            ['id' => 3, 'main_unit_id' => 3, 'name' => 'ภาษาไทย'],
+        ],
+    ]));
     Route::get('/notifications', fn () => response()->json(['fallback' => true]));
     Route::patch('/notifications/{id}/read', fn () => response()->json(['status' => 'ok']));
     Route::post('/notifications/read-all', fn () => response()->json(['status' => 'ok']));

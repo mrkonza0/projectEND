@@ -11,8 +11,17 @@ class FileController extends Controller
     public function index(Request $request)
     {
         $limit = max(1, min((int) $request->query('per_page', 100), 500));
+        $query = FileUpload::with('owner');
 
-        return FileUpload::with('owner')
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->query('entity_type'));
+        }
+
+        if ($request->filled('entity_id')) {
+            $query->where('entity_id', $request->query('entity_id'));
+        }
+
+        return $query
             ->orderBy('id', 'desc')
             ->take($limit)
             ->get()
@@ -23,6 +32,8 @@ class FileController extends Controller
     {
         $request->validate([
             'file' => 'required|file|max:51200',
+            'entity_type' => 'nullable|in:proposal,report,journal',
+            'entity_id' => 'nullable|integer',
         ]);
 
         $upload = $request->file('file');
@@ -30,6 +41,8 @@ class FileController extends Controller
 
         $file = FileUpload::create([
             'owner_user_id' => $request->user()->id,
+            'entity_type'   => $request->input('entity_type'),
+            'entity_id'     => $request->input('entity_id'),
             'name'          => $upload->getClientOriginalName(),
             'original_name' => $upload->getClientOriginalName(),
             'mime_type'     => $upload->getClientMimeType() ?: 'application/octet-stream',
@@ -79,6 +92,8 @@ class FileController extends Controller
         return [
             'id'            => $file->id,
             'owner_user_id' => $file->owner_user_id,
+            'entity_type'   => $file->entity_type,
+            'entity_id'     => $file->entity_id,
             'is_owner'      => $user ? $this->canManage($user, $file) : false,
             'owner_name'    => $file->owner?->name ?? '',
             'owner'         => $file->owner ? [
